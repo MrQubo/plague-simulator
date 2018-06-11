@@ -1,0 +1,40 @@
+package plague_simulator.simulation;
+
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import plague_simulator.simulation.IAgent;
+import plague_simulator.simulation.MeetingAgent;
+import plague_simulator.simulation.SimulationRunner;
+
+public class NormalAgent extends MeetingAgent {
+  public NormalAgent(int id, double meetingProbability) { super(id, meetingProbability); }
+
+  @Override
+  public String getTypeString() {
+    return "normal";
+  }
+
+  @Override
+  public double getMeetingProbability() {
+    if (isHealthy()) {
+      return super.getMeetingProbability();
+    } else {
+      return super.getMeetingProbability() / 2.0;
+    }
+  }
+
+  @Override
+  public Stream<? extends IAgent> getFriends(SimulationRunner sr) {
+    return getFriendsFromAdj(() -> getAdj());
+  }
+  @Override
+  public Stream<? extends IAgent> getFriendsCopy(SimulationRunner sr) {
+    return getFriendsFromAdj(() -> getAdjCopy());
+  }
+
+
+  private Stream<? extends IAgent> getFriendsFromAdj(Supplier<? extends Stream<? extends IAgent>> adj) {
+    return adj.get().filter(IAgent::isAlive);
+  }
+}
