@@ -20,15 +20,19 @@ import static plague_simulator.utils.RandomUtils.trueWithProbability;
 // This IAgent plans meetings and meets with other Agents.
 public abstract class MeetingAgent extends BaseAgent {
   private @Getter @Setter double meetingProbability;
+  private @Getter @Setter int meetingLimit; // Lowering this value won't remove already planned meetings.
 
   // Key:   Phase number.
   // Value: Agents with whom this IAgent will meet.
   private Map<Integer, List<IAgent>> plannedMeetings = new HashMap<>();
 
+  private @Getter int plannedMeetingsCount = 0;
 
-  public MeetingAgent(int id, double meetingProbability) {
+
+  public MeetingAgent(int id, double meetingProbability, int meetingLimit) {
     super(id);
     this.meetingProbability = meetingProbability;
+    this.meetingLimit = meetingLimit;
   }
 
 
@@ -44,7 +48,18 @@ public abstract class MeetingAgent extends BaseAgent {
     if (!plannedMeetings.containsKey(onPhaseNumber)) {
       plannedMeetings.put(onPhaseNumber, new ArrayList<>());
     }
+
     plannedMeetings.get(onPhaseNumber).add(friend);
+    plannedMeetingsCount += 1;
+  }
+
+  protected int removeAllPlannedMeetings(int phaseNumber) {
+    List<IAgent> planned = plannedMeetings.remove(phaseNumber);
+
+    if (planned == null) { return 0; }
+
+    plannedMeetingsCount -= planned.size();
+    return planned.size();
   }
 
 
@@ -86,6 +101,8 @@ public abstract class MeetingAgent extends BaseAgent {
       if (canCancelAllMeetings(sr)) { return; }
       arrangeMeeting(agent, sr);
     }
+
+    removeAllPlannedMeetings(sr.getPhaseNumber());
   }
 
 
@@ -120,7 +137,7 @@ public abstract class MeetingAgent extends BaseAgent {
 
 
   protected boolean cannotPlanMoreMeetings(SimulationRunner sr) {
-    return sr.getPhaseNumber() + 1 >= sr.getConfig().getSimulationDuration();
+    return (meetingLimit >= 0 && plannedMeetingsCount >= meetingLimit) || sr.getPhaseNumber() + 1 >= sr.getConfig().getSimulationDuration();
   }
 
   protected boolean canCancelAllMeetings(SimulationRunner sr) {

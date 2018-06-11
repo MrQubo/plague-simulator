@@ -160,8 +160,8 @@ public class Simulation {
     }
 
     final var config = tryParsingProperties(p);
-    validateConfig(config);
     validateConfig(config, Config.NotNullChecks.class);
+    validateConfig(config);
     return config;
   }
 
@@ -324,10 +324,12 @@ public class Simulation {
   static private Function<Integer, ? extends IAgent> defaultGenerateRandomAgentFactory() {
     double sp = Global.getConfigInstance().getSocialAgentProbability();
     double mp = Global.getConfigInstance().getMeetingProbability();
+    int ml = Global.getConfigInstance().getMeetingLimit();
 
-    return id -> chooseWithProbability(sp, () -> new SocialAgent(id, mp), () -> new NormalAgent(id, mp));
+    return id -> chooseWithProbability(sp, () -> new SocialAgent(id, mp, ml), () -> new NormalAgent(id, mp, ml));
   }
 
+  // Creates SimulationRunner with Global configuration variables.
   static private SimulationRunner simulationRunnerFactory(Infection infection) {
     var simulationConfig = new SimulationRunner.Config();
 

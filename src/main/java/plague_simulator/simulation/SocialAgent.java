@@ -8,7 +8,7 @@ import plague_simulator.simulation.MeetingAgent;
 import plague_simulator.simulation.SimulationRunner;
 
 public class SocialAgent extends MeetingAgent {
-  public SocialAgent(int id, double meetingProbability) { super(id, meetingProbability); }
+  public SocialAgent(int id, double meetingProbability, int meetingLimit) { super(id, meetingProbability, meetingLimit); }
 
   @Override
   public String getTypeString() {

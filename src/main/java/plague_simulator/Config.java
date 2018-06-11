@@ -53,6 +53,9 @@ public class Config {
   @Max(value = 1.0, inclusive = false)
   private Double meetingProbability;
 
+  @JsonProperty("maksSpotkania")
+  private int meetingLimit = -1;
+
   @JsonProperty("prawdZarażenia")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
