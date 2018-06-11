@@ -13,8 +13,8 @@ import lombok.Setter;
 
 import plague_simulator.simulation.IAgent;
 import plague_simulator.simulation.IAgent.State;
+import plague_simulator.simulation.ISimulationRunner;
 import plague_simulator.simulation.Infection;
-import plague_simulator.simulation.SimulationRunner;
 
 @RequiredArgsConstructor // ~(int id)
 public abstract class BaseAgent implements IAgent {
@@ -92,7 +92,7 @@ public abstract class BaseAgent implements IAgent {
 
   // Iterates over infections.
   @Override
-  public void runPhase(SimulationRunner sr) {
+  public void runPhase(ISimulationRunner sr) {
     getInfectionsCopy()
       .takeWhile(i -> {
         i.tryKill(this);

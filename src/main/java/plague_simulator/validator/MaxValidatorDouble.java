@@ -3,6 +3,8 @@ package plague_simulator.validator;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
+import plague_simulator.validator.Max;
+
 public class MaxValidatorDouble implements ConstraintValidator<Max, Double> {
   double bound;
   boolean inclusive;

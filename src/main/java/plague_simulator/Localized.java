@@ -8,6 +8,7 @@ import java.util.ResourceBundle;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+// Handles localization of messages.
 @RequiredArgsConstructor
 public class Localized {
   private final @Getter Locale locale;

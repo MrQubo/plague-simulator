@@ -11,19 +11,19 @@ import lombok.Setter;
 
 import plague_simulator.simulation.BaseAgent;
 import plague_simulator.simulation.IAgent;
-import plague_simulator.simulation.SimulationRunner;
+import plague_simulator.simulation.ISimulationRunner;
 
 import static plague_simulator.utils.RandomUtils.nextInt;
 import static plague_simulator.utils.RandomUtils.nextIntBinomialTruncated;
 import static plague_simulator.utils.RandomUtils.trueWithProbability;
 
-// This IAgent plans meetings and meets with other Agents.
+// This Agent plans meetings and meets with other Agents.
 public abstract class MeetingAgent extends BaseAgent {
   private @Getter @Setter double meetingProbability;
   private @Getter @Setter int meetingLimit; // Lowering this value won't remove already planned meetings.
 
   // Key:   Phase number.
-  // Value: Agents with whom this IAgent will meet.
+  // Value: Agents with whom this Agent will meet.
   private Map<Integer, List<IAgent>> plannedMeetings = new HashMap<>();
 
   private @Getter int plannedMeetingsCount = 0;
@@ -64,7 +64,7 @@ public abstract class MeetingAgent extends BaseAgent {
 
 
   @Override
-  public void runPhase(SimulationRunner sr) {
+  public void runPhase(ISimulationRunner sr) {
     super.runPhase(sr);
 
     // The check is made 3 times to clear plannedMeetings early and don't waste resources.
@@ -89,16 +89,18 @@ public abstract class MeetingAgent extends BaseAgent {
   }
 
 
-  protected void planAllMeetings(SimulationRunner sr) {
-    while (trueWithProbability(getMeetingProbability())) {
-      if (cannotPlanMoreMeetings(sr) || canCancelAllMeetings(sr)) { return; }
+  // Plans meetings.
+  protected void planAllMeetings(ISimulationRunner sr) {
+    while (! cannotPlanMoreMeetings(sr) && trueWithProbability(getMeetingProbability())) {
       planMeeting(sr);
     }
   }
 
-  private void arrangeAllPlannedMeetings(SimulationRunner sr) {
+  // Executes all planned mettings for current phase.
+  private void arrangeAllPlannedMeetings(ISimulationRunner sr) {
     for (IAgent agent : plannedMeetings.getOrDefault(sr.getPhaseNumber(), List.of())) {
-      if (canCancelAllMeetings(sr)) { return; }
+      if (canCancelAllMeetings(sr)) { break; }
+
       arrangeMeeting(agent, sr);
     }
 
@@ -106,7 +108,8 @@ public abstract class MeetingAgent extends BaseAgent {
   }
 
 
-  protected void planMeeting(SimulationRunner sr) {
+  // Plans metting with random Friend.
+  protected void planMeeting(ISimulationRunner sr) {
     final var wrapper = new Object(){ int N = 0; };
 
     // Don't need to copy because of `.limit(1)`.
@@ -118,16 +121,17 @@ public abstract class MeetingAgent extends BaseAgent {
       .forEach(a -> planMeetingWith(a, sr));
   }
 
-  protected void planMeetingWith(IAgent friend, SimulationRunner sr) {
-    if (sr.getPhaseNumber() + 1 >= sr.getConfig().getSimulationDuration()) { return; }
+  // Plans meetings with given Agent on random future phase.
+  protected void planMeetingWith(IAgent friend, ISimulationRunner sr) {
+    if (sr.getPhaseNumber() + 1 >= sr.getSimulationDuration()) { return; }
 
     // Might be slow, but produces a way better results.
-    addPlannedMeeting(friend, nextIntBinomialTruncated(sr.getPhaseNumber() + 1, sr.getConfig().getSimulationDuration()));
+    addPlannedMeeting(friend, nextIntBinomialTruncated(sr.getPhaseNumber() + 1, sr.getSimulationDuration()));
   }
 
 
   // Execute actual meeting.
-  protected void arrangeMeeting(IAgent friend, SimulationRunner sr) {
+  protected void arrangeMeeting(IAgent friend, ISimulationRunner sr) {
     if (friend.isDead()) { return; } // [*]
 
     // Don't need to copy because it's the other party that gets infected.
@@ -136,15 +140,24 @@ public abstract class MeetingAgent extends BaseAgent {
   }
 
 
-  protected boolean cannotPlanMoreMeetings(SimulationRunner sr) {
-    return (meetingLimit >= 0 && plannedMeetingsCount >= meetingLimit) || sr.getPhaseNumber() + 1 >= sr.getConfig().getSimulationDuration();
+  // Value of true stops planning of meetings by planAllMettings.
+  // New plans can still be made by planMeeting and planMettingWith.
+  protected boolean cannotPlanMoreMeetings(ISimulationRunner sr) {
+    return
+      (meetingLimit >= 0 && plannedMeetingsCount >= meetingLimit) ||
+      sr.getPhaseNumber() + 1 >= sr.getSimulationDuration()       ||
+      canCancelAllMeetings(sr);
   }
 
-  protected boolean canCancelAllMeetings(SimulationRunner sr) {
+  // Indicates that Agent can forget all planned mettings.
+  // Planned meetings will be removed during runPhase.
+  protected boolean canCancelAllMeetings(ISimulationRunner sr) {
     return isDead();
   }
 
 
-  abstract public Stream<? extends IAgent> getFriends(SimulationRunner sr);
-  abstract public Stream<? extends IAgent> getFriendsCopy(SimulationRunner sr);
+  // Friends: Agents with whom this Agent can meet.
+  // Friends are being chosen with equal probability each.
+  abstract public Stream<? extends IAgent> getFriends(ISimulationRunner sr);
+  abstract public Stream<? extends IAgent> getFriendsCopy(ISimulationRunner sr);
 }

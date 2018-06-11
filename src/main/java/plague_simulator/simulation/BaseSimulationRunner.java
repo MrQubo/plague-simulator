@@ -1,6 +1,5 @@
 package plague_simulator.simulation;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,18 +15,20 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.Value;
 
 import plague_simulator.simulation.IAgent;
+import plague_simulator.simulation.ISimulationRunner;
 
 import static plague_simulator.graph.GraphUtils.generateRandomSimpleUndirectedGraph;
 
-public class SimulationRunner {
+public class BaseSimulationRunner implements ISimulationRunner {
   private List<IAgent> allAgents;
   private Set<Integer> patientZeroIds;
   private List<PhaseSummary> phaseSummaries;
 
-  private @Getter Config config;
+  private @Getter @Setter Config config;
 
 
   public Stream<? extends IAgent> getAllAgents() {
@@ -58,37 +59,14 @@ public class SimulationRunner {
     return getConfig().getInfections().stream();
   }
 
+  @Override
   public int getPhaseNumber() {
     return phaseSummaries.size();
   }
 
-  public void setConfig(Config newConfig) {
-    if (this.config == null) {
-      this.config = newConfig;
-      return;
-    }
-
-    if (newConfig.simulationDuration != null) {
-      this.config.simulationDuration = newConfig.simulationDuration;
-    }
-    if (newConfig.agentCount != null) {
-      this.config.agentCount = newConfig.agentCount;
-    }
-    if (newConfig.edgeCount != null) {
-      this.config.edgeCount = newConfig.edgeCount;
-    }
-    if (newConfig.averageDegree != null) {
-      this.config.averageDegree = newConfig.averageDegree;
-    }
-    if (newConfig.generateRandomAgent != null) {
-      this.config.generateRandomAgent = newConfig.generateRandomAgent;
-    }
-    if (newConfig.infectRandomAgents != null) {
-      this.config.infectRandomAgents = newConfig.infectRandomAgents;
-    }
-    if (newConfig.infections != null) {
-      this.config.infections = newConfig.infections;
-    }
+  @Override
+  public int getSimulationDuration() {
+    return getConfig().getSimulationDuration();
   }
 
 
@@ -100,17 +78,21 @@ public class SimulationRunner {
   @Data
   @NoArgsConstructor
   static public class Config {
-    private Integer simulationDuration;
-    private Integer agentCount;
-    private Long edgeCount;
-    private Integer averageDegree;
-    private Function<Integer, ? extends IAgent> generateRandomAgent;
-    private Consumer<List<? extends IAgent>> infectRandomAgents;
-    private Collection<? extends Infection> infections;
+    private int simulationDuration;
+    private int agentCount;
+    private long edgeCount;
+    // Should return Agent with id equal to the given argument.
+    private @NonNull Function<Integer, ? extends IAgent> generateRandomAgent;
+    private @NonNull Consumer<List<? extends IAgent>> initializeAgents;
+    private @NonNull Collection<? extends Infection> infections;
 
-    public long getEdgeCount() {
-      if (edgeCount != null) { return edgeCount; }
-      return (long)getAgentCount() * getAverageDegree() / 2;
+
+    public int getAverageDegree() {
+      return (int)(2L * edgeCount / agentCount);
+    }
+
+    public void setAverageDegree(int averageDegree) {
+      edgeCount = (long)agentCount * averageDegree / 2L;
     }
   }
 
@@ -124,7 +106,7 @@ public class SimulationRunner {
   }
 
 
-  public SimulationRunner(Config config) {
+  public BaseSimulationRunner(Config config) {
     this.config = config;
   }
 
@@ -140,8 +122,8 @@ public class SimulationRunner {
       allAgents.add(getConfig().getGenerateRandomAgent().apply(i+1));
     }
 
-    if (getConfig().getInfectRandomAgents() != null) {
-      getConfig().getInfectRandomAgents().accept(allAgents);
+    if (getConfig().getInitializeAgents() != null) {
+      getConfig().getInitializeAgents().accept(allAgents);
     }
 
     patientZeroIds = getAllAgents()
@@ -154,6 +136,7 @@ public class SimulationRunner {
   }
 
 
+  @Override
   public void run() {
     if (allAgents == null || patientZeroIds == null) {
       generate();

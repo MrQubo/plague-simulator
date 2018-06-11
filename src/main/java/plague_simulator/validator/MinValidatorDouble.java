@@ -3,6 +3,8 @@ package plague_simulator.validator;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
+import plague_simulator.validator.Min;
+
 public class MinValidatorDouble implements ConstraintValidator<Min, Double> {
   double bound;
   boolean inclusive;

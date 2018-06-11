@@ -8,6 +8,8 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
+import plague_simulator.validator.ValidateConfigPatientZeroCountValidator;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Constraint(validatedBy = ValidateConfigPatientZeroCountValidator.class)

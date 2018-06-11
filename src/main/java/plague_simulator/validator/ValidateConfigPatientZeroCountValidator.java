@@ -10,6 +10,7 @@ public class ValidateConfigPatientZeroCountValidator implements ConstraintValida
   @Override
   public boolean isValid(Config config, ConstraintValidatorContext ctx) {
     if (config == null) { return true; }
+    if (config.getPatientZeroCount() == null) { return true; }
     if (config.getAgentCount() == null) { return true; }
 
     if (config.getPatientZeroCount() > config.getAgentCount()) {

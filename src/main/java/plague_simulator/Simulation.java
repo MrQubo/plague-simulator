@@ -1,13 +1,11 @@
 package plague_simulator;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -18,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -29,33 +28,43 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
+
 import lombok.Getter;
 import lombok.SneakyThrows;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
 import plague_simulator.Config;
 import plague_simulator.Global;
+import plague_simulator.simulation.BaseSimulationRunner;
 import plague_simulator.simulation.IAgent;
 import plague_simulator.simulation.Infection;
 import plague_simulator.simulation.NormalAgent;
-import plague_simulator.simulation.SimulationRunner;
 import plague_simulator.simulation.SocialAgent;
+
 import static plague_simulator.utils.RandomUtils.chooseWithProbability;
 import static plague_simulator.utils.RandomUtils.nextInt;
 
 public class Simulation {
-  static private final String DEFAULTS_FILE_NAME = "default.properties";
+  static private final String MY_DEFAULTS_FILE_NAME    = "my-defaults.properties";
+  static private final String DEFAULTS_FILE_NAME       = "default.properties";
   static private final String DEFAULT_CONFIG_FILE_NAME = "simulation-conf.xml";
 
-  static private final @Getter(lazy = true) Validator validator = createValidator();
+  static private final @Getter(lazy = true) Validator validator    = createValidator();
   static private final @Getter(lazy = true) JavaPropsMapper mapper = new JavaPropsMapper();
 
 
@@ -66,10 +75,11 @@ public class Simulation {
 
     CommandLine cmd = parseCLI(args);
 
-    Path defaultsFilePath = loadPath(DEFAULTS_FILE_NAME);
-    Path configFilePath = loadPath(cmd.getOptionValue("config", DEFAULT_CONFIG_FILE_NAME));
+    Path myDefaultsFilePath = loadPath(MY_DEFAULTS_FILE_NAME);
+    Path defaultsFilePath   = loadPath(DEFAULTS_FILE_NAME);
+    Path configFilePath     = loadPath(cmd.getOptionValue("config", DEFAULT_CONFIG_FILE_NAME));
 
-    loadGlobalConfig(defaultsFilePath, configFilePath);
+    loadGlobalConfig(myDefaultsFilePath, defaultsFilePath, configFilePath);
 
     var infection = new Infection(
       "The Anime", // Very dreadful infection.
@@ -131,38 +141,56 @@ public class Simulation {
 
 
   // Reads, validates and sets Global Config instance.
-  static private void loadGlobalConfig(Path defaultsFilePath, Path configFilePath) {
-    Global.getInstance().setConfig(readAndValidateConfig(defaultsFilePath, configFilePath));
+  static private void loadGlobalConfig(Path myDefaultsFilePath, Path defaultsFilePath, Path configFilePath) {
+    Global.getInstance().setConfig(readAndValidateConfig(myDefaultsFilePath, defaultsFilePath, configFilePath));
   }
 
   // Validates Config from defaults file and from both defaults and config file and returns Config read from bothof sources.
-  static private Config readAndValidateConfig(Path defaultsFilePath, Path configFilePath) {
-    final Charset utf8charset = StandardCharsets.UTF_8;
-    var p = new Properties();
+  static private Config readAndValidateConfig(Path myDefaultsFilePath, Path defaultsFilePath, Path configFilePath) {
+    var properties = new Properties();
 
-    try (Reader defaultsReader = createReader(defaultsFilePath, utf8charset)) {
-      p.load(defaultsReader);
+    readAndValidateConfigProperties(properties, myDefaultsFilePath);
+    readAndValidateConfigProperties(properties, defaultsFilePath);
+
+    validateConfig(tryParsingProperties(properties));
+
+    readAndValidateConfigXML(properties, configFilePath);
+
+    final var config = tryParsingProperties(properties);
+    validateConfig(config, Config.NotNullChecks.class);
+    validateConfig(config);
+    return config;
+  }
+
+  static private void readAndValidateConfigProperties(Properties properties, Path propertiesFilePath) {
+    try (Reader reader = createReader(propertiesFilePath, StandardCharsets.UTF_8)) {
+      properties.load(reader);
     } catch (NoSuchFileException e) {
-      System.err.println(Global.getLocalizedInstance().getMessage("NoSuchFileException.message", defaultsFilePath));
+      System.err.println(Global.getLocalizedInstance().getMessage("NoSuchFileException.message", propertiesFilePath));
+      endProgramWithError();
+    } catch (IOException e) {
+      endProgramWithError(e);
+    } catch (IllegalArgumentException e) {
+      System.err.println(Global.getLocalizedInstance().getMessage("malformedUnicodeEscape.message", propertiesFilePath));
+      endProgramWithError();
+    }
+  }
+
+  static private void readAndValidateConfigXML(Properties properties, Path xmlFilePath) {
+    try (InputStream in = createInputStream(xmlFilePath)) {
+      properties.loadFromXML(in);
+    } catch (NoSuchFileException e) {
+      System.err.println(Global.getLocalizedInstance().getMessage("NoSuchFileException.message", xmlFilePath));
+      endProgramWithError();
+    } catch (InvalidPropertiesFormatException e) {
+      System.err.println(Global.getLocalizedInstance().getMessage("InvalidPropertiesFormatException.message", xmlFilePath));
+      endProgramWithError();
+    } catch (UnsupportedEncodingException e) {
+      System.err.println(Global.getLocalizedInstance().getMessage("UnsupportedEncodingException.message", xmlFilePath));
       endProgramWithError();
     } catch (IOException e) {
       endProgramWithError(e);
     }
-
-    validateConfig(tryParsingProperties(p));
-
-    try (InputStream configIn = createInputStream(configFilePath)) {
-      p.loadFromXML(configIn);
-    } catch (NoSuchFileException e) {
-      System.err.println(Global.getLocalizedInstance().getMessage("NoSuchFileException.message", configFilePath));
-    } catch (IOException e) {
-      endProgramWithError(e);
-    }
-
-    final var config = tryParsingProperties(p);
-    validateConfig(config, Config.NotNullChecks.class);
-    validateConfig(config);
-    return config;
   }
 
 
@@ -171,15 +199,19 @@ public class Simulation {
     try {
       return getMapper().readPropertiesAs(properties, Config.class);
     } catch (InvalidFormatException e) {
+
+      String invalidValue = e.getValue().toString();
+
       List<JsonMappingException.Reference> errorTrack = e.getPath();
       String propertyName = errorTrack.get(errorTrack.size() - 1).getFieldName();
-      System.err.println(Global.getLocalizedInstance().getMessage("InvalidFormatException.message", propertyName));
+
+      System.err.println(Global.getLocalizedInstance().getMessage("InvalidFormatException.message", invalidValue, propertyName));
       endProgramWithError();
-      return null;
     } catch (IOException e) {
       endProgramWithError(e);
-      return null;
     }
+
+    return null;
   }
 
 
@@ -204,7 +236,7 @@ public class Simulation {
 
 
   // Outputs report to globally configured report file.
-  static private void outputReport(SimulationRunner simulationRunner) {
+  static private void outputReport(BaseSimulationRunner simulationRunner) {
     try (final PrintStream out = openReportFile()) {
       out.println(Global.getLocalizedInstance().getMessage("report.config"));
       printConfig(out);
@@ -237,7 +269,7 @@ public class Simulation {
   }
 
   // Prints agents and their types.
-  static private void printAgents(SimulationRunner simulationRunner, PrintStream out) {
+  static private void printAgents(BaseSimulationRunner simulationRunner, PrintStream out) {
     final Set<Integer> patientZeroIds = simulationRunner.getPatientZeroIdsSet();
 
     simulationRunner.getAllAgents()
@@ -251,7 +283,7 @@ public class Simulation {
   }
 
   // Prints graph structure.
-  static private void printGraph(SimulationRunner simulationRunner, PrintStream out) {
+  static private void printGraph(BaseSimulationRunner simulationRunner, PrintStream out) {
     simulationRunner.getAllAgents()
       // Map agent to stream of itself and neighbours.
       .map(a -> Stream.concat(Stream.of(a), a.getAdj()))
@@ -263,7 +295,7 @@ public class Simulation {
   }
 
   // Prints each phase summary.
-  static private void printPhaseSummaries(SimulationRunner simulationRunner, PrintStream out) {
+  static private void printPhaseSummaries(BaseSimulationRunner simulationRunner, PrintStream out) {
     simulationRunner.getPhaseSummaries()
       // Map phase to stream of integer tuples (of length 3).
       .map(p ->
@@ -288,9 +320,11 @@ public class Simulation {
   }
 
 
-  // For SimulationRunner.Config.
-  static private Consumer<List<? extends IAgent>> defaultInfectRandomAgentsFactory(Infection infection) {
+  // For BaseSimulationRunner.Config.
+  // Infects random Agents.
+  static private Consumer<List<? extends IAgent>> defaultInitializeAgentsFactory(List<? extends Infection> infections) {
     return agents -> {
+      final int infectionsCount = infections.size();
       final int N = agents.size();
       final int N_HALF = N / 2;
       final int P = Global.getConfigInstance().getPatientZeroCount();
@@ -315,12 +349,12 @@ public class Simulation {
 
 
       for (int idx : patientZeroIndexes) {
-        agents.get(idx).infect(infection);
+        agents.get(idx).infect(infections.get(nextInt(infectionsCount)));
       }
     };
   }
 
-  // For SimulationRunner.Config.
+  // For BaseSimulationRunner.Config.
   static private Function<Integer, ? extends IAgent> defaultGenerateRandomAgentFactory() {
     double sp = Global.getConfigInstance().getSocialAgentProbability();
     double mp = Global.getConfigInstance().getMeetingProbability();
@@ -329,18 +363,22 @@ public class Simulation {
     return id -> chooseWithProbability(sp, () -> new SocialAgent(id, mp, ml), () -> new NormalAgent(id, mp, ml));
   }
 
-  // Creates SimulationRunner with Global configuration variables.
-  static private SimulationRunner simulationRunnerFactory(Infection infection) {
-    var simulationConfig = new SimulationRunner.Config();
+  static private BaseSimulationRunner simulationRunnerFactory(Infection infection) {
+    return simulationRunnerFactory(List.of(infection));
+  }
+
+  // Creates BaseSimulationRunner with Global configuration variables.
+  static private BaseSimulationRunner simulationRunnerFactory(List<? extends Infection> infections) {
+    var simulationConfig = new BaseSimulationRunner.Config();
 
     simulationConfig.setSimulationDuration(Global.getConfigInstance().getSimulationDuration());
     simulationConfig.setAgentCount(Global.getConfigInstance().getAgentCount());
     simulationConfig.setAverageDegree(Global.getConfigInstance().getAverageDegree());
     simulationConfig.setGenerateRandomAgent(defaultGenerateRandomAgentFactory());
-    simulationConfig.setInfectRandomAgents(defaultInfectRandomAgentsFactory(infection));
-    simulationConfig.setInfections(List.of(infection));
+    simulationConfig.setInitializeAgents(defaultInitializeAgentsFactory(infections));
+    simulationConfig.setInfections(infections);
 
-    return new SimulationRunner(simulationConfig);
+    return new BaseSimulationRunner(simulationConfig);
   }
 
 
@@ -383,7 +421,7 @@ public class Simulation {
     return new PrintStream(Files.newOutputStream(
       Global.getConfigInstance().getReportFilePath(),
       StandardOpenOption.CREATE,
-      Global.getConfigInstance().isReportFileOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.APPEND
+      Global.getConfigInstance().getReportFileOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.APPEND
     ));
   }
 

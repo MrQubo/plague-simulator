@@ -29,73 +29,77 @@ public class Config {
   @JsonProperty("seed")
   @NotNull(groups = NotNullChecks.class)
   @NotBlank
-  private String seed;
+  private String seed = null;
 
   @JsonProperty("liczbaAgentów")
   @NotNull(groups = NotNullChecks.class)
   @Min(1)
   @Max(1000000)
-  private Integer agentCount;
+  private Integer agentCount = null;
 
   @JsonProperty("liczbaZarażonych")
+  @NotNull(groups = NotNullChecks.class)
   @Min(0)
-  private int patientZeroCount = 1;
+  private Integer patientZeroCount = null;
 
   @JsonProperty("prawdTowarzyski")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(1.0)
-  private Double socialAgentProbability;
+  private Double socialAgentProbability = null;
 
   @JsonProperty("prawdSpotkania")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(value = 1.0, inclusive = false)
-  private Double meetingProbability;
+  private Double meetingProbability = null;
 
   @JsonProperty("maksSpotkania")
-  private int meetingLimit = -1;
+  @NotNull(groups = NotNullChecks.class)
+  private Integer meetingLimit = null;
 
   @JsonProperty("prawdZarażenia")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(1.0)
-  private Double infectivity;
+  private Double infectivity = null;
 
   @JsonProperty("prawdWyzdrowienia")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(1.0)
-  private Double recoveryProbability;
+  private Double recoveryProbability = null;
 
   @JsonProperty("prawdOdporność")
+  @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(1.0)
-  private double immunityProbability = 1.0;
+  private Double immunityProbability = null;
 
   @JsonProperty("śmiertelność")
   @NotNull(groups = NotNullChecks.class)
   @Min(0.0)
   @Max(1.0)
-  private Double lethality;
+  private Double lethality = null;
 
   @JsonProperty("liczbaDni")
   @NotNull(groups = NotNullChecks.class)
   @Min(1)
   @Max(100000)
-  private Integer simulationDuration;
+  private Integer simulationDuration = null;
 
   @JsonProperty("śrZnajomych")
   @NotNull(groups = NotNullChecks.class)
   @Min(0)
-  private Integer averageDegree;
+  private Integer averageDegree = null;
 
   @JsonProperty("plikZRaportem")
   @NotNull(groups = NotNullChecks.class)
-  private Path reportFilePath;
+  private Path reportFilePath = null;
 
   @JsonProperty("nadpiszPlikZRaportem")
-  private boolean reportFileOverwrite = true;
+  @NotNull(groups = NotNullChecks.class)
+  private Boolean reportFileOverwrite = null;
 
 
   static public String getPropertyName(String fieldName) throws NoSuchFieldException {
@@ -104,6 +108,7 @@ public class Config {
   static private String getPropertyName(final Field field) {
     final var annotation = field.getAnnotation(JsonProperty.class);
     if (annotation == null) { return null; }
+
     return annotation.value();
   }
 
@@ -113,6 +118,7 @@ public class Config {
   static private Double getMin(final Field field) {
     final var annotation = field.getAnnotation(Min.class);
     if (annotation == null) { return null; }
+
     return annotation.value();
   }
 
@@ -122,6 +128,7 @@ public class Config {
   static private Double getMax(final Field field) {
     final var annotation = field.getAnnotation(Max.class);
     if (annotation == null) { return null; }
+
     return annotation.value();
   }
 }

@@ -10,6 +10,7 @@ public class RandomUtils {
     return Global.getInstance().getRandom();
   }
 
+
   static public boolean trueWithProbability(double probability) {
     return trueWithProbability(probability, getRandomInstance());
   }
@@ -78,10 +79,11 @@ public class RandomUtils {
     }
   }
 
+  // Generates int from the range [from, to).
+  // from is chosen with the highest probability.
   static public int nextIntBinomialTruncated(int from, int to) {
     return nextIntBinomialTruncated(from, to, getRandomInstance());
   }
-  // Generates int from the range [from, to).
   static public int nextIntBinomialTruncated(int from, int to, final Random random) {
     if (from >= to) { throw new IllegalArgumentException("`to` must be greater than `from`"); }
     if (to - from <= 0) { throw new IllegalArgumentException("`to - from` must fit in int size"); }
@@ -89,6 +91,8 @@ public class RandomUtils {
     return nextIntBinomialTruncated(to - from, random) + from;
   }
 
+  // Generates int from the range [0, to).
+  // 0 is chosen with the highest probability.
   static public int nextIntBinomialIncluding(int to) {
     return nextIntBinomialIncluding(to, getRandomInstance());
   }
@@ -96,6 +100,8 @@ public class RandomUtils {
     return nextIntBinomialIncluding(0, to, random);
   }
 
+  // Generates int from the range [from, to].
+  // The median is chosen with the highest probability.
   static public int nextIntBinomialIncluding(int from, int to) {
     return nextIntBinomialIncluding(from, to, getRandomInstance());
   }

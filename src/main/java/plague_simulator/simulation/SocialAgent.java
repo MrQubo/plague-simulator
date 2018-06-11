@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import plague_simulator.simulation.IAgent;
 import plague_simulator.simulation.MeetingAgent;
-import plague_simulator.simulation.SimulationRunner;
+import plague_simulator.simulation.ISimulationRunner;
 
 public class SocialAgent extends MeetingAgent {
   public SocialAgent(int id, double meetingProbability, int meetingLimit) { super(id, meetingProbability, meetingLimit); }
@@ -16,11 +16,11 @@ public class SocialAgent extends MeetingAgent {
   }
 
   @Override
-  public Stream<? extends IAgent> getFriends(SimulationRunner sr) {
+  public Stream<? extends IAgent> getFriends(ISimulationRunner sr) {
     return getFriendsFromAdj(() -> getAdj());
   }
   @Override
-  public Stream<? extends IAgent> getFriendsCopy(SimulationRunner sr) {
+  public Stream<? extends IAgent> getFriendsCopy(ISimulationRunner sr) {
     return getFriendsFromAdj(() -> getAdjCopy());
   }
 

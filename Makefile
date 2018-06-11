@@ -32,7 +32,24 @@ check-updates:
 .PHONY: clean
 clean:
 	$(MAVEN) clean
+	$(RM) jn395913.zip
 
 .PHONY: jn395913.zip
 jn395913.zip:
-	+zip -9 $@ `git ls-tree HEAD -r --name-only`
+	+rm -f $@                                    && \
+	 zip -9 $@ `git ls-tree HEAD -r --name-only` && \
+	 mv $@ ..                                    && \
+	 cd ..                                       && \
+	 mkdir tmp_3214~                             && \
+	 mv $@ tmp_3214~                             && \
+	 cd tmp_3214~                                && \
+	 mkdir $(basename $@)                        && \
+	 mv $@ $(basename $@)                        && \
+	 cd $(basename $@)                           && \
+	 unzip $@                                    && \
+	 rm $@                                       && \
+	 cd ..                                       && \
+	 zip -r9 $@ $(basename $@)                   && \
+	 mv $@ $(CURDIR)                             && \
+	 cd ..                                       && \
+	 rm -rf tmp_3214~

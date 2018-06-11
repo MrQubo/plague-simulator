@@ -3,8 +3,8 @@ package plague_simulator.simulation;
 import java.util.stream.Stream;
 
 import plague_simulator.graph.IGraphNode;
+import plague_simulator.simulation.ISimulationRunner;
 import plague_simulator.simulation.Infection;
-import plague_simulator.simulation.SimulationRunner;
 
 // Return values of getters without Copy suffix are expected to be not modified.
 public interface IAgent extends IGraphNode<IAgent> {
@@ -31,7 +31,7 @@ public interface IAgent extends IGraphNode<IAgent> {
   public void makeImmune(Infection infection);
 
   // Simulate one phase of a simulation.
-  public void runPhase(SimulationRunner simulationRunner);
+  public void runPhase(ISimulationRunner simulationRunner);
 
   public State getState();
 

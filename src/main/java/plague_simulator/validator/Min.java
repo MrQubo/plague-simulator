@@ -6,8 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
 import plague_simulator.validator.MinValidatorDouble;
@@ -15,6 +13,7 @@ import plague_simulator.validator.MinValidatorFloat;
 import plague_simulator.validator.MinValidatorInteger;
 import plague_simulator.validator.MinValidatorLong;
 
+// Default implementation doesn't handle double and float values, and doesn't have inclusive option.
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 @Constraint(validatedBy = {MinValidatorInteger.class, MinValidatorDouble.class, MinValidatorLong.class, MinValidatorFloat.class})
