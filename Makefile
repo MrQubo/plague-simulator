@@ -35,4 +35,4 @@ clean:
 
 .PHONY: jn395913.zip
 jn395913.zip:
-	+zip $@ `git ls-tree HEAD -r --name-only`
+	+zip -9 $@ `git ls-tree HEAD -r --name-only`
