@@ -8,14 +8,14 @@ RUN mvn clean validate compile
 CMD mvn exec:java
 
 
-# build with:
+# build:
 #
 #     docker build -t plague-simulator .
 #
-# run with:
+# run:
 #
 #     docker run --name plague-simulator -it plague-simulator
 #
-# copy report with:
+# get report:
 #
 #     docker cp plague-simulator:/app/report_file.txt .
