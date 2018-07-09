@@ -9,7 +9,7 @@ run:
 	$(MAVEN) exec:java
 
 .PHONY: build
-build: update
+build: clean validate
 	$(MAVEN) compile
 
 .PHONY: update

@@ -66,7 +66,7 @@
         <configuration>
           <source>10</source>
           <target>10</target>
-          <compilerVersion>10</compilerVersion>
+          <compilerVersion>10.0.1</compilerVersion>
         </configuration>
       </plugin>
       <plugin>
@@ -110,10 +110,10 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.5.0,4)</version>
+                  <version>[3.5.4,4)</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[10,11)</version>
+                  <version>[10.0.1,11)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
