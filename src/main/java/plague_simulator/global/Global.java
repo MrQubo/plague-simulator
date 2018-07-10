@@ -1,6 +1,5 @@
 package plague_simulator.global;
 
-import java.util.Locale;
 import java.util.Random;
 
 import lombok.Getter;

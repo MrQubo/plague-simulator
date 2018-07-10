@@ -2,7 +2,6 @@ package plague_simulator.config;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 

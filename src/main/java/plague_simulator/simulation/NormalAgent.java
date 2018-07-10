@@ -4,8 +4,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import plague_simulator.simulation.IAgent;
-import plague_simulator.simulation.MeetingAgent;
 import plague_simulator.simulation.ISimulationRunner;
+import plague_simulator.simulation.MeetingAgent;
 
 public class NormalAgent extends MeetingAgent {
   public NormalAgent(int id, double meetingProbability, int meetingLimit) { super(id, meetingProbability, meetingLimit); }
