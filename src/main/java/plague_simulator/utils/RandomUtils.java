@@ -3,7 +3,7 @@ package plague_simulator.utils;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import plague_simulator.Global;
+import plague_simulator.global.Global;
 
 public class RandomUtils {
   static public Random getRandomInstance() {
